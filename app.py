@@ -4,8 +4,8 @@ from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
-_LOCAL_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ql-group_activity-report-1781180638.csv")
-_DOWNLOADS_CSV = "/Users/aritrabose/Downloads/ql-group_activity-report-1781180638.csv"
+_LOCAL_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ql-group_activity-report-1781182077.csv")
+_DOWNLOADS_CSV = "/Users/aritrabose/Downloads/ql-group_activity-report-1781182077.csv"
 
 def _resolve_csv():
     # Prefer the bundled CSV (works on Vercel and locally)
