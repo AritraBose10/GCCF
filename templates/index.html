@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Google Cloud Learning Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --g-blue:#4285F4;--g-red:#EA4335;--g-yellow:#FBBC05;--g-green:#34A853;
+  --g-blue-l:#E8F0FE;--g-red-l:#FCE8E6;--g-yellow-l:#FEF7E0;--g-green-l:#E6F4EA;
+  --bg:#F8F9FA;--card:#fff;--border:#DADCE0;--text:#202124;--muted:#5F6368;
+  --radius:8px;--sh:0 1px 3px rgba(60,64,67,.15),0 1px 2px rgba(60,64,67,.1);
+  --sh2:0 2px 8px rgba(60,64,67,.2),0 1px 3px rgba(60,64,67,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Roboto',sans-serif;font-size:14px}
+
+/* ── Header ── */
+header{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;box-shadow:0 1px 3px rgba(60,64,67,.12)}
+.header-left{display:flex;align-items:center;gap:12px}
+.g-logo{display:flex;align-items:center;font-family:'Google Sans',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px}
+.g-logo span:nth-child(1){color:var(--g-blue)}.g-logo span:nth-child(2){color:var(--g-red)}
+.g-logo span:nth-child(3){color:var(--g-yellow)}.g-logo span:nth-child(4){color:var(--g-blue)}
+.g-logo span:nth-child(5){color:var(--g-green)}.g-logo span:nth-child(6){color:var(--g-red)}
+.hdiv{width:1px;height:28px;background:var(--border)}
+.htitle{font-family:'Google Sans',sans-serif;font-size:18px;font-weight:500}
+.hsub{color:var(--muted);font-size:12px;margin-top:1px}
+.hbtns{display:flex;gap:8px;align-items:center}
+.btn-primary{background:var(--g-blue);color:#fff;border:none;border-radius:4px;
+  padding:9px 20px;cursor:pointer;font-family:'Google Sans',sans-serif;font-size:14px;
+  font-weight:500;display:flex;align-items:center;gap:6px;transition:background .2s}
+.btn-primary:hover{background:#1a73e8}
+.btn-primary.loading{background:#a8c7fa;cursor:not-allowed}
+
+/* ── Filter bar ── */
+.filter-bar{background:#fff;border-bottom:1px solid var(--border);
+  padding:10px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  position:sticky;top:64px;z-index:199;box-shadow:0 1px 2px rgba(60,64,67,.08)}
+.filter-group{display:flex;flex-direction:column;gap:3px}
+.filter-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+.filter-select,.filter-input{
+  background:var(--bg);border:1px solid var(--border);border-radius:4px;
+  padding:6px 10px;color:var(--text);font-size:13px;font-family:'Roboto',sans-serif;
+  outline:none;height:34px;transition:border .2s,box-shadow .2s}
+.filter-select{cursor:pointer;min-width:150px}
+.filter-input{width:160px}
+.filter-input:focus,.filter-select:focus{border-color:var(--g-blue);box-shadow:0 0 0 2px rgba(66,133,244,.2)}
+.filter-date{width:140px}
+.filter-divider{width:1px;height:34px;background:var(--border);margin:0 4px}
+.clear-btn{background:transparent;border:1px solid var(--border);border-radius:4px;
+  padding:6px 14px;cursor:pointer;font-size:12px;color:var(--muted);height:34px;
+  font-family:'Roboto',sans-serif;transition:all .2s;align-self:flex-end}
+.clear-btn:hover{border-color:var(--g-red);color:var(--g-red);background:var(--g-red-l)}
+.active-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 24px 8px}
+.chip-filter{display:inline-flex;align-items:center;gap:6px;background:var(--g-blue-l);
+  color:var(--g-blue);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:500}
+.chip-filter button{background:none;border:none;cursor:pointer;color:var(--g-blue);
+  font-size:14px;line-height:1;padding:0 2px}
+
+/* ── Result banner ── */
+.result-banner{background:var(--g-blue-l);border-radius:var(--radius);
+  padding:8px 16px;margin:0 32px 16px;font-size:13px;color:#1558d6;
+  display:none;align-items:center;gap:8px}
+.result-banner.visible{display:flex}
+
+/* ── Layout ── */
+main{padding:20px 32px;max-width:1600px;margin:0 auto}
+
+/* ── Summary cards ── */
+.summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 24px;box-shadow:var(--sh);transition:box-shadow .2s;
+  display:flex;flex-direction:column;gap:4px;border-top:4px solid transparent}
+.stat-card:hover{box-shadow:var(--sh2)}
+.stat-card.blue{border-top-color:var(--g-blue)}.stat-card.red{border-top-color:var(--g-red)}
+.stat-card.yellow{border-top-color:var(--g-yellow)}.stat-card.green{border-top-color:var(--g-green)}
+.stat-card .icon{font-size:20px;margin-bottom:4px}
+.stat-card .slabel{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+.stat-card .svalue{font-family:'Google Sans Display',sans-serif;font-size:36px;font-weight:700;line-height:1.1}
+.stat-card .ssub{color:var(--muted);font-size:12px}
+.c-blue{color:var(--g-blue)}.c-red{color:var(--g-red)}.c-yellow{color:var(--g-yellow)}.c-green{color:var(--g-green)}
+
+/* ── Charts ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-wide{grid-column:1/-1}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--sh)}
+.chart-card h2{font-family:'Google Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text);
+  margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-card h2::before{content:'';display:block;width:4px;height:16px;border-radius:2px;background:var(--g-blue)}
+.chart-card canvas{max-height:280px}
+
+/* ── Table card ── */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 24px;box-shadow:var(--sh);margin-bottom:24px}
+.table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.table-header h2{font-family:'Google Sans',sans-serif;font-size:14px;font-weight:500;
+  display:flex;align-items:center;gap:8px}
+.table-header h2::before{content:'';display:block;width:4px;height:16px;border-radius:2px;background:var(--g-blue)}
+.table-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-wrap{position:relative}
+.search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none}
+.search-input{background:var(--bg);border:1px solid var(--border);border-radius:20px;
+  padding:7px 14px 7px 30px;color:var(--text);font-size:13px;width:220px;outline:none;
+  font-family:'Roboto',sans-serif;transition:border .2s,box-shadow .2s}
+.search-input:focus{border-color:var(--g-blue);box-shadow:0 0 0 2px rgba(66,133,244,.2);background:#fff}
+.inline-select{background:var(--bg);border:1px solid var(--border);border-radius:4px;
+  padding:6px 10px;font-size:12px;color:var(--text);outline:none;cursor:pointer;height:34px}
+.inline-select:focus{border-color:var(--g-blue)}
+
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:2px solid var(--border)}
+thead th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;
+  letter-spacing:.06em;padding:10px 12px;font-weight:500;cursor:pointer;
+  user-select:none;white-space:nowrap;transition:color .15s}
+thead th:hover{color:var(--g-blue)}
+thead th.sorted{color:var(--g-blue)}
+tbody tr{border-bottom:1px solid #F1F3F4;transition:background .15s}
+tbody tr:hover{background:#F8F9FA}
+tbody td{padding:11px 12px;font-size:13px}
+.member-name{font-weight:500;color:var(--text)}
+.member-email{color:var(--muted);font-size:11px;margin-top:2px}
+
+.bar-wrap{background:#E8EAED;border-radius:4px;height:6px;width:80px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+.bar-fill{height:100%;border-radius:4px}
+.bar-high{background:var(--g-green)}.bar-mid{background:var(--g-yellow)}.bar-low{background:var(--g-red)}
+.chip{display:inline-flex;align-items:center;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:500}
+.chip-green{background:var(--g-green-l);color:#137333}
+.chip-yellow{background:var(--g-yellow-l);color:#B06000}
+.chip-red{background:var(--g-red-l);color:#C5221F}
+.chip-blue{background:var(--g-blue-l);color:#1558d6}
+.chip-gray{background:#F1F3F4;color:var(--muted)}
+
+.pagination{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;align-items:center;color:var(--muted);font-size:12px}
+.pg-btn{background:transparent;border:1px solid var(--border);border-radius:4px;
+  padding:5px 14px;cursor:pointer;color:var(--text);font-size:12px;font-family:'Roboto',sans-serif;transition:all .15s}
+.pg-btn:hover:not(:disabled){background:var(--g-blue-l);border-color:var(--g-blue);color:var(--g-blue)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Cert cards ── */
+.cert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.cert-block{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.cert-hd{background:linear-gradient(135deg,#4285F4 0%,#1a73e8 100%);color:#fff;
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.cert-hd .cname{font-family:'Google Sans',sans-serif;font-size:13px;font-weight:500}
+.cnt-badge{background:rgba(255,255,255,.25);border-radius:20px;padding:2px 12px;font-size:13px;font-weight:700}
+.cert-row{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 18px;border-bottom:1px solid #F1F3F4;font-size:13px}
+.cert-row:last-child{border-bottom:none}
+.cert-row:hover{background:#F8F9FA}
+.cert-name{font-weight:500}.cert-meta{color:var(--muted);font-size:11px}
+
+/* ── Footer ── */
+footer{text-align:center;padding:16px;color:var(--muted);font-size:12px;
+  border-top:1px solid var(--border);background:#fff}
+.g-dots{display:inline-flex;gap:4px;vertical-align:middle;margin-right:6px}
+.g-dots span{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* ── No-results ── */
+.empty-row td{text-align:center;color:var(--muted);padding:32px;font-style:italic}
+
+@media(max-width:1200px){.summary-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr};.summary-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){main{padding:12px};.filter-bar{padding:8px 12px};header{padding:0 12px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="g-logo"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+    <div class="hdiv"></div>
+    <div>
+      <div class="htitle">Cloud Learning Dashboard</div>
+      <div id="lastUpdated" class="hsub">Loading…</div>
+    </div>
+  </div>
+  <div class="hbtns">
+    <button class="btn-primary" id="refreshBtn" onclick="loadData()">↺ Refresh</button>
+  </div>
+</header>
+
+<!-- Global filter bar -->
+<div class="filter-bar" id="filterBar">
+  <div class="filter-group">
+    <span class="filter-label">From date</span>
+    <input type="date" class="filter-input filter-date" id="fDateFrom" onchange="applyFilters()"/>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">To date</span>
+    <input type="date" class="filter-input filter-date" id="fDateTo" onchange="applyFilters()"/>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Activity Type</span>
+    <select class="filter-select" id="fType" onchange="applyFilters()">
+      <option value="">All Types</option>
+      <option value="Lab">Lab</option>
+      <option value="Course">Course</option>
+      <option value="Path">Path</option>
+      <option value="Game">Game</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <select class="filter-select" id="fStatus" onchange="applyFilters()">
+      <option value="">All Status</option>
+      <option value="passed">Passed Only</option>
+      <option value="failed">Failed Only</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Course / Path</span>
+    <select class="filter-select" id="fParent" onchange="applyFilters()" style="min-width:220px">
+      <option value="">All Courses & Paths</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Student</span>
+    <div class="search-wrap">
+      <input class="filter-input search-input" id="fMember" placeholder="Search student…" oninput="applyFilters()" style="border-radius:4px;padding-left:30px"/>
+    </div>
+  </div>
+  <div class="filter-group" style="align-self:flex-end">
+    <button class="clear-btn" onclick="clearFilters()">✕ Clear filters</button>
+  </div>
+</div>
+
+<!-- Active filter chips -->
+<div class="active-chips" id="activeChips"></div>
+
+<!-- Result count banner -->
+<div class="result-banner" id="resultBanner">
+  <span>🔍</span><span id="resultText"></span>
+</div>
+
+<main>
+  <div class="summary-grid" id="summaryGrid"></div>
+
+  <div class="charts-grid">
+    <div class="chart-card chart-wide">
+      <h2>Daily Activity Trend</h2>
+      <canvas id="trendChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Activity Type Breakdown</h2>
+      <canvas id="typeChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Top 10 Labs by Attempts</h2>
+      <canvas id="labsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Certifications -->
+  <div class="table-card">
+    <div class="table-header">
+      <h2>Certification Completions</h2>
+      <span id="certCount" class="chip chip-blue"></span>
+    </div>
+    <div id="certContent"></div>
+  </div>
+
+  <!-- Lab-by-lab -->
+  <div class="table-card">
+    <div class="table-header">
+      <h2>Lab-by-Lab Breakdown</h2>
+      <div class="table-controls">
+        <div class="search-wrap">
+          <input class="search-input" id="labSearch" placeholder="Search lab…" oninput="renderLabTable()"/>
+        </div>
+        <select class="inline-select" id="labStatusFilter" onchange="renderLabTable()">
+          <option value="">All labs</option>
+          <option value="high">High pass rate (≥70%)</option>
+          <option value="mid">Medium pass rate (40–70%)</option>
+          <option value="low">Low pass rate (&lt;40%)</option>
+        </select>
+        <select class="inline-select" id="labSort" onchange="labSortKey=this.value;labSortDir=-1;renderLabTable()">
+          <option value="unique_attempted">Sort: Most Attempted</option>
+          <option value="unique_passed">Sort: Most Passed</option>
+          <option value="pass_rate">Sort: Pass Rate</option>
+          <option value="lab">Sort: Name A–Z</option>
+        </select>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="labSort('lab')">Lab Name</th>
+        <th onclick="labSort('unique_attempted')">Unique Attempted</th>
+        <th onclick="labSort('unique_passed')">Unique Passed</th>
+        <th onclick="labSort('pass_rate')">Pass Rate</th>
+        <th onclick="labSort('total_attempts')">Total Attempts</th>
+        <th onclick="labSort('pass_attempts')">Pass Attempts</th>
+      </tr></thead>
+      <tbody id="labTbody"></tbody>
+    </table>
+    <div class="pagination">
+      <span id="labPgInfo"></span>
+      <button class="pg-btn" id="labPrev" onclick="changeLabPage(-1)">‹ Prev</button>
+      <button class="pg-btn" id="labNext" onclick="changeLabPage(1)">Next ›</button>
+    </div>
+  </div>
+
+  <!-- Member progress -->
+  <div class="table-card">
+    <div class="table-header">
+      <h2>Member Progress</h2>
+      <div class="table-controls">
+        <div class="search-wrap">
+          <input class="search-input" id="memberSearch" placeholder="Search student…" oninput="renderMemberTable()"/>
+        </div>
+        <select class="inline-select" id="memberPassFilter" onchange="renderMemberTable()">
+          <option value="">All students</option>
+          <option value="high">Pass rate ≥70%</option>
+          <option value="mid">Pass rate 40–70%</option>
+          <option value="low">Pass rate &lt;40%</option>
+          <option value="cert">Cert completed</option>
+        </select>
+        <select class="inline-select" id="memberSort" onchange="memberSortKey=this.value;memberSortDir=-1;renderMemberTable()">
+          <option value="labs_passed">Sort: Most Passed</option>
+          <option value="pass_rate">Sort: Pass Rate</option>
+          <option value="total_minutes">Sort: Time Spent</option>
+          <option value="labs">Sort: Most Labs</option>
+          <option value="name">Sort: Name A–Z</option>
+        </select>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="memberSort('name')">Student</th>
+        <th onclick="memberSort('labs')">Labs</th>
+        <th onclick="memberSort('labs_passed')">Passed</th>
+        <th onclick="memberSort('pass_rate')">Lab Pass Rate</th>
+        <th onclick="memberSort('courses_completed')">Courses</th>
+        <th onclick="memberSort('cert_count')">Certs</th>
+        <th onclick="memberSort('total_minutes')">Time (min)</th>
+        <th onclick="memberSort('activities')">Activities</th>
+      </tr></thead>
+      <tbody id="memberTbody"></tbody>
+    </table>
+    <div class="pagination">
+      <span id="memberPgInfo"></span>
+      <button class="pg-btn" id="memberPrev" onclick="changeMemberPage(-1)">‹ Prev</button>
+      <button class="pg-btn" id="memberNext" onclick="changeMemberPage(1)">Next ›</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="g-dots">
+    <span style="background:#4285F4"></span><span style="background:#EA4335"></span>
+    <span style="background:#FBBC05"></span><span style="background:#34A853"></span>
+  </span>
+  Google Cloud Skills Boost — Activity Report Dashboard
+</footer>
+
+<script>
+// ────────────────────────────────────────────────
+//  State
+// ────────────────────────────────────────────────
+let RAW = [];          // all rows from API
+let FILTERED = [];     // after global filters
+let certCompletors = new Set(); // members who completed any Path
+
+// Tables
+let labRows = [], labPage = 0, labSortKey = 'unique_attempted', labSortDir = -1;
+let memberRows = [], memberPage = 0, memberSortKey = 'labs_passed', memberSortDir = -1;
+const PG = 20;
+
+// Charts
+let trendChart = null, typeChart = null, labsChart = null;
+const G = {blue:'#4285F4',red:'#EA4335',yellow:'#FBBC05',green:'#34A853'};
+
+// ────────────────────────────────────────────────
+//  Load
+// ────────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading'); btn.innerHTML = '↺ Loading…';
+  try {
+    const res = await fetch('/api/rows');
+    RAW = await res.json();
+    populateParentFilter();
+    applyFilters();
+    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('lastUpdated').textContent = 'Error loading data';
+  }
+  btn.classList.remove('loading'); btn.innerHTML = '↺ Refresh';
+}
+
+function populateParentFilter() {
+  const parents = [...new Set(RAW.map(r => r.parent_name).filter(Boolean))].sort();
+  const sel = document.getElementById('fParent');
+  parents.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p.length > 50 ? p.slice(0,48)+'…' : p;
+    sel.appendChild(o);
+  });
+}
+
+// ────────────────────────────────────────────────
+//  Global filters
+// ────────────────────────────────────────────────
+function getFilters() {
+  return {
+    dateFrom: document.getElementById('fDateFrom').value,
+    dateTo:   document.getElementById('fDateTo').value,
+    type:     document.getElementById('fType').value,
+    status:   document.getElementById('fStatus').value,
+    parent:   document.getElementById('fParent').value,
+    member:   document.getElementById('fMember').value.toLowerCase().trim(),
+  };
+}
+
+function applyFilters() {
+  const f = getFilters();
+  FILTERED = RAW.filter(r => {
+    if (f.dateFrom && r.date_completed && r.date_completed < f.dateFrom) return false;
+    if (f.dateTo   && r.date_completed && r.date_completed > f.dateTo)   return false;
+    if (f.type   && r.type        !== f.type)   return false;
+    if (f.status === 'passed' && !r.passed)     return false;
+    if (f.status === 'failed' &&  r.passed)     return false;
+    if (f.parent && r.parent_name !== f.parent && r.activity !== f.parent) return false;
+    if (f.member && !r.member.toLowerCase().includes(f.member)) return false;
+    return true;
+  });
+
+  // cert completors from the FULL dataset (not filtered) — always show who completed certs
+  certCompletors = new Set(RAW.filter(r => r.type === 'Path' && r.passed).map(r => r.member));
+
+  renderAll();
+  renderChips(f);
+  renderBanner();
+}
+
+function clearFilters() {
+  ['fDateFrom','fDateTo'].forEach(id => document.getElementById(id).value = '');
+  ['fType','fStatus','fParent'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fMember').value = '';
+  applyFilters();
+}
+
+function renderChips(f) {
+  const chips = [];
+  if (f.dateFrom) chips.push({label: 'From: '+f.dateFrom, clear: ()=>{ document.getElementById('fDateFrom').value=''; applyFilters(); }});
+  if (f.dateTo)   chips.push({label: 'To: '+f.dateTo,     clear: ()=>{ document.getElementById('fDateTo').value='';   applyFilters(); }});
+  if (f.type)     chips.push({label: 'Type: '+f.type,     clear: ()=>{ document.getElementById('fType').value='';    applyFilters(); }});
+  if (f.status)   chips.push({label: 'Status: '+f.status, clear: ()=>{ document.getElementById('fStatus').value='';  applyFilters(); }});
+  if (f.parent)   chips.push({label: 'Course: '+(f.parent.length>30?f.parent.slice(0,28)+'…':f.parent), clear: ()=>{ document.getElementById('fParent').value=''; applyFilters(); }});
+  if (f.member)   chips.push({label: 'Student: '+f.member, clear: ()=>{ document.getElementById('fMember').value=''; applyFilters(); }});
+  const el = document.getElementById('activeChips');
+  el.innerHTML = chips.map((c,i) =>
+    `<span class="chip-filter">${c.label}<button onclick="chipClear(${i})">×</button></span>`
+  ).join('');
+  window._chipClears = chips.map(c => c.clear);
+  el.style.display = chips.length ? 'flex' : 'none';
+}
+function chipClear(i) { window._chipClears[i](); }
+
+function renderBanner() {
+  const total = RAW.length, filtered = FILTERED.length;
+  const el = document.getElementById('resultBanner');
+  const hasFilter = FILTERED.length !== RAW.length;
+  el.classList.toggle('visible', hasFilter);
+  if (hasFilter) {
+    document.getElementById('resultText').textContent =
+      `Showing ${filtered.toLocaleString()} of ${total.toLocaleString()} records`;
+  }
+}
+
+// ────────────────────────────────────────────────
+//  Render all sections
+// ────────────────────────────────────────────────
+function renderAll() {
+  const stats = computeStats(FILTERED);
+  renderSummary(stats);
+  renderTrendChart(stats);
+  renderTypeChart(stats);
+  renderTopLabsChart(stats);
+  renderCerts();
+  labRows = stats.labByLab; labPage = 0; renderLabTable();
+  memberRows = stats.memberTable; memberPage = 0; renderMemberTable();
+}
+
+// ────────────────────────────────────────────────
+//  Compute stats from filtered rows
+// ────────────────────────────────────────────────
+function computeStats(rows) {
+  const members = new Set(rows.map(r => r.member));
+  const passed  = rows.filter(r => r.passed).length;
+  const minutes = rows.reduce((s,r) => s + r.minutes, 0);
+
+  // daily trend
+  const daily = {};
+  rows.forEach(r => {
+    const d = r.date_completed || 'Unknown';
+    if (!daily[d]) daily[d] = {total:0, passed:0};
+    daily[d].total++;
+    if (r.passed) daily[d].passed++;
+  });
+  const dailyArr = Object.entries(daily).filter(([k]) => k!=='Unknown')
+    .sort((a,b) => a[0].localeCompare(b[0]))
+    .map(([date,v]) => ({date,...v}));
+
+  // type breakdown
+  const types = {};
+  rows.forEach(r => {
+    const t = r.type || 'Unknown';
+    if (!types[t]) types[t] = {total:0,passed:0};
+    types[t].total++;
+    if (r.passed) types[t].passed++;
+  });
+
+  // lab attempts — unique member tracking
+  const labMap = {};
+  rows.filter(r => r.type==='Lab').forEach(r => {
+    if (!labMap[r.activity]) labMap[r.activity] = {attempted:new Set(),passed:new Set(),total:0,passAttempts:0};
+    labMap[r.activity].attempted.add(r.member);
+    labMap[r.activity].total++;
+    if (r.passed) { labMap[r.activity].passed.add(r.member); labMap[r.activity].passAttempts++; }
+  });
+  const labByLab = Object.entries(labMap).map(([lab,v]) => ({
+    lab,
+    unique_attempted: v.attempted.size,
+    unique_passed:    v.passed.size,
+    total_attempts:   v.total,
+    pass_attempts:    v.passAttempts,
+    pass_rate: v.attempted.size ? Math.round(v.passed.size/v.attempted.size*1000)/10 : 0,
+  })).sort((a,b) => b.unique_attempted - a.unique_attempted);
+
+  const topLabs = [...labByLab].sort((a,b) => b.total_attempts - a.total_attempts).slice(0,10);
+
+  // per-member
+  const mmap = {};
+  rows.forEach(r => {
+    if (!mmap[r.member]) mmap[r.member] = {labs:0,labs_passed:0,minutes:0,activities:0,courses:0};
+    const m = mmap[r.member];
+    m.activities++;
+    m.minutes += r.minutes;
+    if (r.type==='Lab') { m.labs++; if(r.passed) m.labs_passed++; }
+    if (r.type==='Course' && r.passed) m.courses++;
+  });
+  const memberTable = Object.entries(mmap).map(([email,s]) => ({
+    email,
+    name: email.split('@')[0],
+    labs: s.labs,
+    labs_passed: s.labs_passed,
+    pass_rate: s.labs>0 ? Math.round(s.labs_passed/s.labs*1000)/10 : 0,
+    courses_completed: s.courses,
+    cert_count: certCompletors.has(email) ? 1 : 0,
+    total_minutes: Math.round(s.minutes*10)/10,
+    activities: s.activities,
+  })).sort((a,b) => b.labs_passed - a.labs_passed);
+
+  return {
+    summary: { total_members: members.size, total: rows.length, passed, failed: rows.length-passed,
+               pass_rate: rows.length ? Math.round(passed/rows.length*1000)/10 : 0,
+               hours: Math.round(minutes/60*10)/10 },
+    dailyArr, types, topLabs, labByLab, memberTable
+  };
+}
+
+// ────────────────────────────────────────────────
+//  Summary cards
+// ────────────────────────────────────────────────
+function renderSummary({summary:s}) {
+  document.getElementById('summaryGrid').innerHTML = [
+    {label:'Total Students', value:s.total_members, cls:'c-blue', color:'blue', icon:'👥', sub:'in filtered data'},
+    {label:'Total Activities', value:s.total, cls:'c-blue', color:'blue', icon:'📋', sub:'all submissions'},
+    {label:'Passed', value:s.passed, cls:'c-green', color:'green', icon:'✅', sub:s.pass_rate+'% pass rate'},
+    {label:'Failed', value:s.failed, cls:'c-red', color:'red', icon:'❌', sub:'attempts'},
+    {label:'Learning Hours', value:s.hours, cls:'c-yellow', color:'yellow', icon:'⏱️', sub:'total across filtered'},
+  ].map(c=>`<div class="stat-card ${c.color}">
+    <div class="icon">${c.icon}</div>
+    <div class="slabel">${c.label}</div>
+    <div class="svalue ${c.cls}">${c.value}</div>
+    <div class="ssub">${c.sub}</div>
+  </div>`).join('');
+}
+
+// ────────────────────────────────────────────────
+//  Charts
+// ────────────────────────────────────────────────
+const chOpts = (extra={}) => ({
+  responsive:true, maintainAspectRatio:true,
+  plugins:{ legend:{ labels:{ color:'#5F6368', font:{family:'Roboto',size:12} } } },
+  scales:{
+    x:{ticks:{color:'#5F6368',font:{family:'Roboto',size:11}},grid:{color:'#F1F3F4'}},
+    y:{ticks:{color:'#5F6368',font:{family:'Roboto',size:11}},grid:{color:'#F1F3F4'}}
+  }, ...extra
+});
+
+function renderTrendChart({dailyArr:d}) {
+  const passed = d.map(x=>x.passed);
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:d.map(x=>x.date), datasets:[
+      {label:'Passed', data:passed, backgroundColor:'rgba(52,168,83,.8)', borderRadius:3, stack:'a'},
+      {label:'Failed', data:d.map((x,i)=>x.total-passed[i]), backgroundColor:'rgba(234,67,53,.6)', borderRadius:3, stack:'a'},
+    ]},
+    options: chOpts({scales:{
+      x:{ticks:{color:'#5F6368',maxTicksLimit:14},grid:{color:'#F1F3F4'}},
+      y:{ticks:{color:'#5F6368'},grid:{color:'#F1F3F4'}}
+    }})
+  });
+}
+
+function renderTypeChart({types}) {
+  const entries = Object.entries(types).sort((a,b)=>a[0].localeCompare(b[0]));
+  const ctx = document.getElementById('typeChart').getContext('2d');
+  if (typeChart) typeChart.destroy();
+  typeChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:entries.map(([k])=>k), datasets:[{
+      data:entries.map(([,v])=>v.total),
+      backgroundColor:[G.blue,G.green,G.yellow,G.red,'#A142F4'],
+      borderWidth:3, borderColor:'#fff', hoverOffset:6
+    }]},
+    options:{ responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{position:'right',labels:{color:'#5F6368',font:{family:'Roboto',size:12},padding:16,usePointStyle:true}},
+        tooltip:{callbacks:{label:(ctx)=>`  ${entries[ctx.dataIndex][1].total} total, ${entries[ctx.dataIndex][1].passed} passed`}}
+      }
+    }
+  });
+}
+
+function renderTopLabsChart({topLabs:d}) {
+  const ctx = document.getElementById('labsChart').getContext('2d');
+  if (labsChart) labsChart.destroy();
+  labsChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:d.map(x=>x.lab.length>35?x.lab.slice(0,33)+'…':x.lab), datasets:[
+      {label:'Passed', data:d.map(x=>x.pass_attempts), backgroundColor:'rgba(52,168,83,.8)', borderRadius:3, stack:'b'},
+      {label:'Failed', data:d.map(x=>x.total_attempts-x.pass_attempts), backgroundColor:'rgba(234,67,53,.6)', borderRadius:3, stack:'b'},
+    ]},
+    options: chOpts({indexAxis:'y', scales:{
+      x:{ticks:{color:'#5F6368'},grid:{color:'#F1F3F4'}},
+      y:{ticks:{color:'#5F6368',font:{family:'Roboto',size:11}},grid:{color:'#F1F3F4'}}
+    }})
+  });
+}
+
+// ────────────────────────────────────────────────
+//  Certifications
+// ────────────────────────────────────────────────
+function renderCerts() {
+  const certMap = {};
+  RAW.filter(r => r.type==='Path' && r.passed).forEach(r => {
+    if (!certMap[r.activity]) certMap[r.activity] = [];
+    certMap[r.activity].push(r);
+  });
+  const entries = Object.entries(certMap).sort((a,b)=>b[1].length-a[1].length);
+  const totalCompletors = new Set(RAW.filter(r=>r.type==='Path'&&r.passed).map(r=>r.member)).size;
+  document.getElementById('certCount').textContent = totalCompletors + ' total completors';
+
+  if (!entries.length) {
+    document.getElementById('certContent').innerHTML = '<p style="color:var(--muted);padding:16px">No certification completions found.</p>';
+    return;
+  }
+  document.getElementById('certContent').innerHTML = `<div class="cert-grid">${
+    entries.map(([cert,rows])=>{
+      const sorted = [...rows].sort((a,b)=>(a.date_completed||'').localeCompare(b.date_completed||''));
+      return `<div class="cert-block">
+        <div class="cert-hd">
+          <span class="cname">🏆 ${cert}</span>
+          <span class="cnt-badge">${rows.length}</span>
+        </div>
+        ${sorted.map(r=>`<div class="cert-row">
+          <span class="cert-name">${r.member.split('@')[0]}</span>
+          <span class="cert-meta">${r.date_completed||'?'} · ${Math.round(r.minutes)} min</span>
+        </div>`).join('')}
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+// ────────────────────────────────────────────────
+//  Lab table
+// ────────────────────────────────────────────────
+function labSort(key) {
+  if (labSortKey===key) labSortDir*=-1; else {labSortKey=key;labSortDir=-1;}
+  document.getElementById('labSort').value=key;
+  renderLabTable();
+}
+
+function renderLabTable() {
+  const q = document.getElementById('labSearch').value.toLowerCase();
+  const pf = document.getElementById('labStatusFilter').value;
+  let rows = labRows.filter(l => {
+    if (!l.lab.toLowerCase().includes(q)) return false;
+    if (pf==='high' && l.pass_rate<70) return false;
+    if (pf==='mid'  && (l.pass_rate<40||l.pass_rate>=70)) return false;
+    if (pf==='low'  && l.pass_rate>=40) return false;
+    return true;
+  }).sort((a,b) => {
+    const av=a[labSortKey],bv=b[labSortKey];
+    return typeof av==='string'?av.localeCompare(bv)*labSortDir:(av-bv)*labSortDir;
+  });
+  labPage = 0;
+  const slice = rows.slice(labPage*PG, labPage*PG+PG);
+  document.getElementById('labTbody').innerHTML = slice.length ? slice.map(l=>{
+    const pr=l.pass_rate, bc=pr>=70?'bar-high':pr>=40?'bar-mid':'bar-low', cc=pr>=70?'chip-green':pr>=40?'chip-yellow':'chip-red';
+    return `<tr>
+      <td style="font-weight:500;max-width:280px">${l.lab}</td>
+      <td>${l.unique_attempted}</td>
+      <td><strong>${l.unique_passed}</strong></td>
+      <td><span class="bar-wrap"><span class="bar-fill ${bc}" style="width:${pr}%"></span></span><span class="chip ${cc}">${pr}%</span></td>
+      <td>${l.total_attempts}</td>
+      <td>${l.pass_attempts}</td>
+    </tr>`;
+  }).join('') : `<tr class="empty-row"><td colspan="6">No labs match the current filters.</td></tr>`;
+  const total=rows.length;
+  document.getElementById('labPgInfo').textContent=`${Math.min(1,total)}–${Math.min(PG,total)} of ${total}`;
+  document.getElementById('labPrev').disabled=true;
+  document.getElementById('labNext').disabled=total<=PG;
+  window._labFilteredRows=rows;
+}
+
+function changeLabPage(d) {
+  const rows=window._labFilteredRows||[];
+  labPage=Math.max(0,Math.min(labPage+d,Math.ceil(rows.length/PG)-1));
+  const slice=rows.slice(labPage*PG,(labPage+1)*PG);
+  document.getElementById('labTbody').innerHTML=slice.map(l=>{
+    const pr=l.pass_rate,bc=pr>=70?'bar-high':pr>=40?'bar-mid':'bar-low',cc=pr>=70?'chip-green':pr>=40?'chip-yellow':'chip-red';
+    return `<tr><td style="font-weight:500;max-width:280px">${l.lab}</td><td>${l.unique_attempted}</td><td><strong>${l.unique_passed}</strong></td>
+    <td><span class="bar-wrap"><span class="bar-fill ${bc}" style="width:${pr}%"></span></span><span class="chip ${cc}">${pr}%</span></td>
+    <td>${l.total_attempts}</td><td>${l.pass_attempts}</td></tr>`;
+  }).join('');
+  const total=rows.length;
+  document.getElementById('labPgInfo').textContent=`${labPage*PG+1}–${Math.min((labPage+1)*PG,total)} of ${total}`;
+  document.getElementById('labPrev').disabled=labPage===0;
+  document.getElementById('labNext').disabled=labPage>=Math.ceil(total/PG)-1;
+}
+
+// ────────────────────────────────────────────────
+//  Member table
+// ────────────────────────────────────────────────
+function memberSort(key) {
+  if(memberSortKey===key) memberSortDir*=-1; else{memberSortKey=key;memberSortDir=-1;}
+  document.getElementById('memberSort').value=key;
+  renderMemberTable();
+}
+
+function renderMemberTable() {
+  const q=document.getElementById('memberSearch').value.toLowerCase();
+  const pf=document.getElementById('memberPassFilter').value;
+  let rows=memberRows.filter(m=>{
+    if(q&&!m.name.toLowerCase().includes(q)&&!m.email.toLowerCase().includes(q)) return false;
+    if(pf==='high'&&m.pass_rate<70) return false;
+    if(pf==='mid'&&(m.pass_rate<40||m.pass_rate>=70)) return false;
+    if(pf==='low'&&m.pass_rate>=40) return false;
+    if(pf==='cert'&&m.cert_count===0) return false;
+    return true;
+  }).sort((a,b)=>{
+    const av=a[memberSortKey],bv=b[memberSortKey];
+    return typeof av==='string'?av.localeCompare(bv)*memberSortDir:(av-bv)*memberSortDir;
+  });
+  memberPage=0;
+  window._memberFilteredRows=rows;
+  renderMemberRows(rows);
+}
+
+function renderMemberRows(rows) {
+  const slice=rows.slice(memberPage*PG,(memberPage+1)*PG);
+  document.getElementById('memberTbody').innerHTML=slice.length?slice.map(m=>{
+    const pr=m.pass_rate,bc=pr>=70?'bar-high':pr>=40?'bar-mid':'bar-low',cc=pr>=70?'chip-green':pr>=40?'chip-yellow':'chip-red';
+    const certBadge=m.cert_count>0?`<span class="chip chip-blue" style="margin-left:4px">🏆 Certified</span>`:'';
+    return `<tr>
+      <td><div class="member-name">${m.name}${certBadge}</div><div class="member-email">${m.email}</div></td>
+      <td>${m.labs}</td><td><strong>${m.labs_passed}</strong></td>
+      <td><span class="bar-wrap"><span class="bar-fill ${bc}" style="width:${pr}%"></span></span><span class="chip ${cc}">${pr}%</span></td>
+      <td>${m.courses_completed}</td>
+      <td>${m.cert_count>0?'<span class="chip chip-green">✓ Yes</span>':'<span class="chip chip-gray">—</span>'}</td>
+      <td>${m.total_minutes}</td><td>${m.activities}</td>
+    </tr>`;
+  }).join(''):`<tr class="empty-row"><td colspan="8">No students match the current filters.</td></tr>`;
+  const total=rows.length;
+  document.getElementById('memberPgInfo').textContent=`${Math.min(1,total)}–${Math.min((memberPage+1)*PG,total)} of ${total}`;
+  document.getElementById('memberPrev').disabled=memberPage===0;
+  document.getElementById('memberNext').disabled=memberPage>=Math.ceil(total/PG)-1;
+}
+
+function changeMemberPage(d) {
+  const rows=window._memberFilteredRows||[];
+  memberPage=Math.max(0,Math.min(memberPage+d,Math.ceil(rows.length/PG)-1));
+  renderMemberRows(rows);
+}
+
+loadData();
+</script>
+</body>
+</html>
