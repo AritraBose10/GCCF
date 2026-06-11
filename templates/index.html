@@ -36,10 +36,30 @@ header{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;heig
 .btn-primary:hover{background:#1a73e8}
 .btn-primary.loading{background:#a8c7fa;cursor:not-allowed}
 
+/* ── Year tabs ── */
+.year-tabs{background:#fff;border-bottom:2px solid var(--border);
+  padding:0 24px;display:flex;align-items:flex-end;gap:0;
+  position:sticky;top:64px;z-index:200}
+.year-tab{display:flex;align-items:center;gap:8px;padding:14px 24px;
+  font-family:'Google Sans',sans-serif;font-size:14px;font-weight:500;
+  color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;
+  cursor:pointer;transition:color .2s,border-color .2s;user-select:none;white-space:nowrap}
+.year-tab:hover{color:var(--g-blue);background:var(--g-blue-l)}
+.year-tab.active{color:var(--g-blue);border-bottom-color:var(--g-blue)}
+.year-tab .tab-count{background:#F1F3F4;color:var(--muted);border-radius:20px;
+  padding:1px 9px;font-size:12px;font-weight:600;transition:background .2s,color .2s}
+.year-tab.active .tab-count{background:var(--g-blue-l);color:var(--g-blue)}
+.year-tab.y2 .tab-count{background:#E6F4EA;color:#137333}
+.year-tab.y2.active{color:var(--g-green);border-bottom-color:var(--g-green)}
+.year-tab.y2.active .tab-count{background:#C6EDD4;color:#0d652d}
+.year-tab.y1 .tab-count{background:#FEF7E0;color:#B06000}
+.year-tab.y1.active{color:var(--g-yellow);border-bottom-color:#E8A000}
+.year-tab.y1.active .tab-count{background:#FDECC8;color:#8A4600}
+
 /* ── Filter bar ── */
 .filter-bar{background:#fff;border-bottom:1px solid var(--border);
   padding:10px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
-  position:sticky;top:64px;z-index:199;box-shadow:0 1px 2px rgba(60,64,67,.08)}
+  position:sticky;top:114px;z-index:199;box-shadow:0 1px 2px rgba(60,64,67,.08)}
 .filter-group{display:flex;flex-direction:column;gap:3px}
 .filter-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
 .filter-select,.filter-input{
@@ -182,6 +202,19 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:12px;
     <button class="btn-primary" id="refreshBtn" onclick="loadData()">↺ Refresh</button>
   </div>
 </header>
+
+<!-- Year tabs -->
+<div class="year-tabs">
+  <div class="year-tab active" id="tabAll" onclick="setYear('all')">
+    All Students <span class="tab-count" id="countAll">—</span>
+  </div>
+  <div class="year-tab y2" id="tabY2" onclick="setYear('2')">
+    2nd Year (24…) <span class="tab-count" id="countY2">—</span>
+  </div>
+  <div class="year-tab y1" id="tabY1" onclick="setYear('1')">
+    1st Year (25…) <span class="tab-count" id="countY1">—</span>
+  </div>
+</div>
 
 <!-- Global filter bar -->
 <div class="filter-bar" id="filterBar">
@@ -363,7 +396,8 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:12px;
 // ────────────────────────────────────────────────
 let RAW = [];          // all rows from API
 let FILTERED = [];     // after global filters
-let certCompletors = new Set(); // members who completed any Path
+let certCompletors = new Set();
+let activeYear = 'all'; // 'all' | '1' | '2'
 
 // Tables
 let labRows = [], labPage = 0, labSortKey = 'unique_attempted', labSortDir = -1;
@@ -384,6 +418,7 @@ async function loadData() {
     const res = await fetch('/api/rows');
     RAW = await res.json();
     populateParentFilter();
+    updateTabCounts();
     applyFilters();
     document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   } catch(e) {
@@ -416,9 +451,34 @@ function getFilters() {
   };
 }
 
+function yearOfMember(email) {
+  const local = email.split('@')[0];
+  if (local.includes('241013')) return '2';
+  if (local.includes('251013')) return '1';
+  return 'other';
+}
+
+function setYear(y) {
+  activeYear = y;
+  document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(y === 'all' ? 'tabAll' : y === '2' ? 'tabY2' : 'tabY1').classList.add('active');
+  applyFilters();
+}
+
+function updateTabCounts() {
+  const members = email => yearOfMember(email);
+  const all  = new Set(RAW.map(r => r.member)).size;
+  const y2   = new Set(RAW.filter(r => members(r.member) === '2').map(r => r.member)).size;
+  const y1   = new Set(RAW.filter(r => members(r.member) === '1').map(r => r.member)).size;
+  document.getElementById('countAll').textContent = all + ' students';
+  document.getElementById('countY2').textContent  = y2  + ' students';
+  document.getElementById('countY1').textContent  = y1  + ' students';
+}
+
 function applyFilters() {
   const f = getFilters();
   FILTERED = RAW.filter(r => {
+    if (activeYear !== 'all' && yearOfMember(r.member) !== activeYear) return false;
     if (f.dateFrom && r.date_completed && r.date_completed < f.dateFrom) return false;
     if (f.dateTo   && r.date_completed && r.date_completed > f.dateTo)   return false;
     if (f.type   && r.type        !== f.type)   return false;
@@ -429,8 +489,9 @@ function applyFilters() {
     return true;
   });
 
-  // cert completors from the FULL dataset (not filtered) — always show who completed certs
-  certCompletors = new Set(RAW.filter(r => r.type === 'Path' && r.passed).map(r => r.member));
+  // cert completors scoped to active year
+  const yearBase = activeYear === 'all' ? RAW : RAW.filter(r => yearOfMember(r.member) === activeYear);
+  certCompletors = new Set(yearBase.filter(r => r.type === 'Path' && r.passed).map(r => r.member));
 
   renderAll();
   renderChips(f);
@@ -441,6 +502,7 @@ function clearFilters() {
   ['fDateFrom','fDateTo'].forEach(id => document.getElementById(id).value = '');
   ['fType','fStatus','fParent'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('fMember').value = '';
+  // don't reset the year tab — only reset the filter bar controls
   applyFilters();
 }
 
