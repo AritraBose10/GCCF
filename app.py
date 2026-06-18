@@ -66,8 +66,6 @@ def load_members():
     members = []
     with open(_resolve_members(), newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
-            if r.get("Role", "Member") == "Administrator":
-                continue
             last_active = r.get("Last active", "").replace(" UTC", "")[:10] or None
             members.append({
                 "email":         r["Email"].lower().strip(),
