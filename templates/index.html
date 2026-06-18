@@ -781,13 +781,14 @@ function renderDashboard() {
   const coursesCompleted = courseRows.filter(r=>r.passed).length;
 
   // Use MEMBERS list for invitation stats (matches Google's group admin panel)
-  const accepted = MEMBERS.filter(m=>m.status==='Active').length;
-  const pending  = MEMBERS.filter(m=>m.status==='Pending').length;
+  const accepted      = MEMBERS.filter(m=>m.status==='Active').length;
+  const pending       = MEMBERS.filter(m=>m.status==='Pending').length;
+  const activeLearners = MEMBERS.filter(m=>m.activities>0).length;
 
   document.getElementById('dashStats').innerHTML = [
     {label:'Accepted Invitations', val:accepted,            cls:'c-blue',  sv:'sv-blue',  icon:'👥', sub:'active members'},
     {label:'Pending Invitations',  val:pending,             cls:'c-yellow',sv:'sv-yellow',icon:'⏳', sub:'awaiting acceptance'},
-    {label:'Active Learners',      val:stu.length,          cls:'c-blue',  sv:'sv-blue',  icon:'🎓', sub:'started at least 1 activity'},
+    {label:'Active Learners',      val:activeLearners,      cls:'c-blue',  sv:'sv-blue',  icon:'🎓', sub:'completed ≥1 activity'},
     {label:'Labs Started',         val:labs.length,         cls:'c-blue',  sv:'sv-blue',  icon:'🔬', sub:'lab submissions'},
     {label:'Labs Passed',          val:labsPassed,          cls:'c-green', sv:'sv-green', icon:'✅', sub:`${labs.length?Math.round(labsPassed/labs.length*100):0}% lab pass rate`},
     {label:'Courses Enrolled',     val:courseRows.length,   cls:'c-yellow',sv:'sv-yellow',icon:'📚', sub:'course submissions'},
