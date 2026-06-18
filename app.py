@@ -6,9 +6,10 @@ app = Flask(__name__)
 
 _LOCAL_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gccf.csv")
 _DOWNLOADS_CSV = "/Users/aritrabose/Downloads/gccf.csv"
+_LOCAL_MEMBERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "members.csv")
+_DOWNLOADS_MEMBERS = "/Users/aritrabose/Downloads/members.csv"
 
 def _resolve_csv():
-    # Prefer the bundled CSV (works on Vercel and locally)
     if os.path.exists(_LOCAL_CSV):
         try:
             open(_LOCAL_CSV).close()
@@ -16,6 +17,15 @@ def _resolve_csv():
         except Exception:
             pass
     return _DOWNLOADS_CSV
+
+def _resolve_members():
+    if os.path.exists(_LOCAL_MEMBERS):
+        try:
+            open(_LOCAL_MEMBERS).close()
+            return _LOCAL_MEMBERS
+        except Exception:
+            pass
+    return _DOWNLOADS_MEMBERS
 
 
 def load_rows():
@@ -52,9 +62,30 @@ def index():
     return render_template("index.html")
 
 
+def load_members():
+    members = []
+    with open(_resolve_members(), newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            if r.get("Role", "Member") == "Administrator":
+                continue
+            last_active = r.get("Last active", "").replace(" UTC", "")[:10] or None
+            members.append({
+                "email":         r["Email"].lower().strip(),
+                "status":        r["Status"].strip(),
+                "activities":    int(r.get("Activities completed", 0) or 0),
+                "last_active":   last_active,
+            })
+    return members
+
+
 @app.route("/api/rows")
 def api_rows():
     return jsonify(load_rows())
+
+
+@app.route("/api/members")
+def api_members():
+    return jsonify(load_members())
 
 
 if __name__ == "__main__":

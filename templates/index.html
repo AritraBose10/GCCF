@@ -553,6 +553,7 @@ const G = {blue:'#4285F4',red:'#EA4335',yellow:'#FBBC05',green:'#34A853'};
 //  STATE
 // ════════════════════════════════════════════════════════
 let RAW = [];          // raw rows from API
+let MEMBERS = [];      // all members from members.csv
 let STUDENTS = {};     // email → student profile
 let activeYear = 'all';
 let activePage = 'dashboard';
@@ -608,8 +609,9 @@ async function loadData() {
   const btn=document.getElementById('refreshBtn');
   btn.classList.add('loading'); btn.innerHTML='↺ Loading…';
   try {
-    const res = await fetch('/api/rows');
-    RAW = await res.json();
+    const [rowsRes, membersRes] = await Promise.all([fetch('/api/rows'), fetch('/api/members')]);
+    RAW = await rowsRes.json();
+    MEMBERS = await membersRes.json();
     buildStudents();
     populateCourseFilter();
     updateTabCounts();
@@ -773,13 +775,25 @@ function renderDashboard() {
   const mins = rows.reduce((a,r)=>a+r.minutes,0);
   const inProgress = stu.filter(s=>s.score>0&&s.score<N_COURSES).length;
 
+  const labs = rows.filter(r=>r.type==='Lab');
+  const labsPassed = labs.filter(r=>r.passed).length;
+  const courseRows = rows.filter(r=>r.type==='Course');
+  const coursesCompleted = courseRows.filter(r=>r.passed).length;
+
+  // Use MEMBERS list for invitation stats (matches Google's group admin panel)
+  const accepted = MEMBERS.filter(m=>m.status==='Active').length;
+  const pending  = MEMBERS.filter(m=>m.status==='Pending').length;
+
   document.getElementById('dashStats').innerHTML = [
-    {label:'Total Students',  val:stu.length,  cls:'c-blue',  sv:'sv-blue',  icon:'👥', sub:'in cohort'},
-    {label:'Activities',      val:rows.length,  cls:'c-blue',  sv:'sv-blue',  icon:'📋', sub:'filtered submissions'},
-    {label:'Passed',          val:passed,        cls:'c-green', sv:'sv-green', icon:'✅', sub:`${rows.length?Math.round(passed/rows.length*100):0}% pass rate`},
-    {label:'Failed',          val:rows.length-passed, cls:'c-red', sv:'sv-red', icon:'❌', sub:'attempts'},
-    {label:'Champions',       val:champions,     cls:'c-purple',sv:'sv-purple',icon:'🏆', sub:`all ${N_COURSES} courses done`},
-    {label:'Learning Hours',  val:Math.round(mins/60), cls:'c-yellow',sv:'sv-yellow',icon:'⏱️',sub:'total across filtered'},
+    {label:'Accepted Invitations', val:accepted,            cls:'c-blue',  sv:'sv-blue',  icon:'👥', sub:'active members'},
+    {label:'Pending Invitations',  val:pending,             cls:'c-yellow',sv:'sv-yellow',icon:'⏳', sub:'awaiting acceptance'},
+    {label:'Active Learners',      val:stu.length,          cls:'c-blue',  sv:'sv-blue',  icon:'🎓', sub:'started at least 1 activity'},
+    {label:'Labs Started',         val:labs.length,         cls:'c-blue',  sv:'sv-blue',  icon:'🔬', sub:'lab submissions'},
+    {label:'Labs Passed',          val:labsPassed,          cls:'c-green', sv:'sv-green', icon:'✅', sub:`${labs.length?Math.round(labsPassed/labs.length*100):0}% lab pass rate`},
+    {label:'Courses Enrolled',     val:courseRows.length,   cls:'c-yellow',sv:'sv-yellow',icon:'📚', sub:'course submissions'},
+    {label:'Courses Completed',    val:coursesCompleted,    cls:'c-green', sv:'sv-green', icon:'🎓', sub:`${courseRows.length?Math.round(coursesCompleted/courseRows.length*100):0}% completion rate`},
+    {label:'Champions',            val:champions,           cls:'c-purple',sv:'sv-purple',icon:'🏆', sub:`all ${N_COURSES} courses done`},
+    {label:'Learning Hours',       val:Math.round(mins/60), cls:'c-yellow',sv:'sv-yellow',icon:'⏱️', sub:'total across filtered'},
   ].map(c=>`<div class="stat-card ${c.cls}">
     <div class="stat-icon">${c.icon}</div>
     <div class="stat-label">${c.label}</div>
