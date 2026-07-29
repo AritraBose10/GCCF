@@ -539,6 +539,7 @@ const COURSE_IDS = COURSES.map(c=>c.id);
 const N_COURSES = COURSES.length;
 const NAME_TO_COURSE_ID = {};
 COURSES.forEach(c => { NAME_TO_COURSE_ID[c.name] = c.id; });
+const GCCF_PATH_NAME = 'Google Cloud Computing Foundations Certificate';
 
 // dept code → label & style
 const DEPT_MAP = {
@@ -674,13 +675,29 @@ function buildStudents() {
       s.labsAttempted++;
       if (r.passed) s.labsPassed++;
     }
+
+    // Google's own record of full-certificate completion. The per-course
+    // rows above are sometimes incomplete in this group-scoped export (a
+    // course finished before the student's tracked window, or a course
+    // whose completion event just didn't sync) even though Google has
+    // already certified the student finished everything. This Path row is
+    // ground truth and overrides any gaps in the per-course reconstruction.
+    if (r.type==='Path' && r.activity===GCCF_PATH_NAME && r.passed) {
+      if (!s.pathCertifiedDate || r.date_completed < s.pathCertifiedDate) {
+        s.pathCertifiedDate = r.date_completed;
+      }
+      s.pathCertified = true;
+    }
   });
 
-  // Determine in_progress courses
+  // Determine in_progress / not_started courses, or backfill from the
+  // certificate record when the export is missing a course's own row.
   Object.values(STUDENTS).forEach(s => {
     COURSES.forEach(c => {
       if (!s.courses[c.id]) {
-        if (s.labParents.has(c.name)) {
+        if (s.pathCertified) {
+          s.courses[c.id] = {status:'completed', date:s.pathCertifiedDate, viaCertificate:true};
+        } else if (s.labParents.has(c.name)) {
           s.courses[c.id] = {status:'in_progress', date:null};
         } else {
           s.courses[c.id] = {status:'not_started', date:null};
@@ -955,7 +972,7 @@ function mRenderRows() {
     const courseCells=COURSES.map(c=>{
       const st=s.courses[c.id];
       if(!st||st.status==='not_started') return `<td class="cs-none" style="text-align:center">—</td>`;
-      if(st.status==='completed') return `<td><span class="cs-done">✓ Done</span>${st.date?`<div style="font-size:10px;color:var(--muted);text-align:center">${st.date}</div>`:''}</td>`;
+      if(st.status==='completed') return `<td title="${st.viaCertificate?'Course row missing from export; inferred from certificate completion':''}"><span class="cs-done">✓ Done${st.viaCertificate?' 🏅':''}</span>${st.date?`<div style="font-size:10px;color:var(--muted);text-align:center">${st.date}</div>`:''}</td>`;
       return `<td><span class="cs-prog">⏳ WIP</span></td>`;
     }).join('');
     const sc=s.score;
@@ -1176,13 +1193,13 @@ function openDrawer(email) {
   document.getElementById('drawerCourses').innerHTML=COURSES.map(c=>{
     const st=s.courses[c.id];
     const status=st?.status||'not_started';
-    const statusBadge=status==='completed'?`<span class="chip chip-green">✓ Completed</span>`
+    const statusBadge=status==='completed'?`<span class="chip chip-green">✓ Completed${st.viaCertificate?' 🏅':''}</span>`
       :status==='in_progress'?`<span class="chip chip-yellow">⏳ In Progress</span>`
       :`<span class="chip chip-gray">Not Started</span>`;
     return `<div class="course-row">
       <div>
         <div class="course-name"><a href="${courseUrl(c.id)}" target="_blank">#${c.id} — ${c.short}</a></div>
-        ${st?.date?`<div class="course-date">✓ Completed ${st.date}</div>`:''}
+        ${st?.date?`<div class="course-date">✓ Completed ${st.date}${st.viaCertificate?' <span style="color:var(--muted)">(inferred from certificate — course row missing from export)</span>':''}</div>`:''}
       </div>
       ${statusBadge}
     </div>`;
