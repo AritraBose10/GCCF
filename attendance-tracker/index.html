@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Attendance Tracker</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Student Attendance Tracker</h1>
+    <p class="subtitle">Minimum <strong>60%</strong> attendance required to sit for Internal Assessments, ESA, and Practical exams.</p>
+  </header>
+
+  <main>
+    <div class="controls">
+      <label for="batch-select">Batch</label>
+      <select id="batch-select"></select>
+
+      <label for="search-box">Search</label>
+      <input id="search-box" type="text" placeholder="Search by name or roll no.">
+
+      <div class="summary" id="summary"></div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="student-table">
+        <thead>
+          <tr>
+            <th>Roll No.</th>
+            <th>Name</th>
+            <th>Subject</th>
+            <th>Classes Held</th>
+            <th>Classes Attended</th>
+            <th>Attendance %</th>
+            <th>Eligibility</th>
+          </tr>
+        </thead>
+        <tbody id="student-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    <p>Attendance threshold: 60%. Students below this are not eligible for IA, ESA, or practical exams.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

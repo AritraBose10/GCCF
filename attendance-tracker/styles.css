@@ -1,0 +1,170 @@
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #1a1f26;
+  --muted: #5b6472;
+  --border: #e1e5ea;
+  --accent: #2563eb;
+  --pass: #1a7f37;
+  --pass-bg: #e6f6ea;
+  --fail: #b3261e;
+  --fail-bg: #fdecea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --card: #1c1f24;
+    --text: #eaecef;
+    --muted: #9aa4b2;
+    --border: #2b2f36;
+    --accent: #5b9dff;
+    --pass: #4ade80;
+    --pass-bg: #123a20;
+    --fail: #ff6b6b;
+    --fail-bg: #3a1414;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+}
+
+.topbar h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.6rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.controls label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-right: -0.4rem;
+}
+
+.controls select,
+.controls input {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.summary {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.summary strong {
+  color: var(--fail);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 640px;
+}
+
+th, td {
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge.pass {
+  color: var(--pass);
+  background: var(--pass-bg);
+}
+
+.badge.fail {
+  color: var(--fail);
+  background: var(--fail-bg);
+}
+
+.pct.fail {
+  color: var(--fail);
+  font-weight: 700;
+}
+
+.pct.pass {
+  color: var(--pass);
+  font-weight: 700;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  padding: 1.5rem;
+}
+
+.empty-row td {
+  text-align: center;
+  color: var(--muted);
+  padding: 1.5rem;
+}
