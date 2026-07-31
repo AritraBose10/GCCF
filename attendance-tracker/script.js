@@ -19,10 +19,9 @@ function loadStudents() {
     .then((res) => res.text())
     .then((text) => {
       students = parseCSV(text).map((r) => {
-        const hasData = r.total_classes !== "" && r.attended_classes !== "";
-        const total = hasData ? parseFloat(r.total_classes) : null;
-        const attended = hasData ? parseFloat(r.attended_classes) : null;
-        const pct = hasData && total > 0 ? (attended / total) * 100 : null;
+        const total = r.total_classes !== "" ? parseFloat(r.total_classes) : null;
+        const attended = r.attended_classes !== "" ? parseFloat(r.attended_classes) : null;
+        const pct = total !== null && attended !== null && total > 0 ? (attended / total) * 100 : null;
         return {
           rollNo: r.roll_no,
           name: r.name,
