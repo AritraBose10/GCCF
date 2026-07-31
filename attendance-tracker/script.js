@@ -19,9 +19,10 @@ function loadStudents() {
     .then((res) => res.text())
     .then((text) => {
       students = parseCSV(text).map((r) => {
-        const total = parseFloat(r.total_classes) || 0;
-        const attended = parseFloat(r.attended_classes) || 0;
-        const pct = total > 0 ? (attended / total) * 100 : 0;
+        const hasData = r.total_classes !== "" && r.attended_classes !== "";
+        const total = hasData ? parseFloat(r.total_classes) : null;
+        const attended = hasData ? parseFloat(r.attended_classes) : null;
+        const pct = hasData && total > 0 ? (attended / total) * 100 : null;
         return {
           rollNo: r.roll_no,
           name: r.name,
@@ -30,7 +31,7 @@ function loadStudents() {
           total,
           attended,
           pct,
-          eligible: pct >= THRESHOLD,
+          eligible: pct === null ? null : pct >= THRESHOLD,
         };
       });
     });
@@ -60,23 +61,29 @@ function render() {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No students match.</td></tr>';
   } else {
     tbody.innerHTML = filtered
-      .map((s) => `
+      .map((s) => {
+        const statusClass = s.eligible === null ? "pending" : s.eligible ? "pass" : "fail";
+        const statusLabel = s.eligible === null ? "Pending Data" : s.eligible ? "Eligible" : "Not Eligible";
+        return `
         <tr>
           <td>${s.rollNo}</td>
           <td>${s.name}</td>
-          <td>${s.subject}</td>
-          <td>${s.total}</td>
-          <td>${s.attended}</td>
-          <td class="pct ${s.eligible ? "pass" : "fail"}">${s.pct.toFixed(1)}%</td>
-          <td><span class="badge ${s.eligible ? "pass" : "fail"}">${s.eligible ? "Eligible" : "Not Eligible"}</span></td>
+          <td>${s.subject || "&mdash;"}</td>
+          <td>${s.total ?? "&mdash;"}</td>
+          <td>${s.attended ?? "&mdash;"}</td>
+          <td class="pct ${statusClass}">${s.pct === null ? "&mdash;" : s.pct.toFixed(1) + "%"}</td>
+          <td><span class="badge ${statusClass}">${statusLabel}</span></td>
         </tr>
-      `)
+      `;
+      })
       .join("");
   }
 
-  const belowCount = filtered.filter((s) => !s.eligible).length;
+  const belowCount = filtered.filter((s) => s.eligible === false).length;
+  const pendingCount = filtered.filter((s) => s.eligible === null).length;
   document.getElementById("summary").innerHTML =
-    `${filtered.length} student(s) shown &middot; <strong>${belowCount}</strong> below ${THRESHOLD}% threshold`;
+    `${filtered.length} student(s) shown &middot; <strong>${belowCount}</strong> below ${THRESHOLD}% threshold` +
+    (pendingCount ? ` &middot; ${pendingCount} awaiting attendance data` : "");
 }
 
 document.getElementById("batch-select")?.addEventListener("change", render);

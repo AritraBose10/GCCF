@@ -146,6 +146,11 @@ tbody tr:hover {
   background: var(--fail-bg);
 }
 
+.badge.pending {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
+}
+
 .pct.fail {
   color: var(--fail);
   font-weight: 700;
@@ -154,6 +159,10 @@ tbody tr:hover {
 .pct.pass {
   color: var(--pass);
   font-weight: 700;
+}
+
+.pct.pending {
+  color: var(--muted);
 }
 
 footer {
